@@ -43,7 +43,21 @@ func (p Point) Add(other Point) Point {
 	return NewPoint(p.X+other.X, p.Y+other.Y)
 }
 
+// Sub returns a new point with the given point subtracted.
+func (p Point) Sub(other Point) Point {
+	return NewPoint(p.X-other.X, p.Y-other.Y)
+}
+
 // Mul returns a new point multiplied with the factor.
 func (p Point) Mul(factor float64) Point {
-	return NewPoint(p.X*factor, p.Y*factor)
+	p.X *= factor
+	p.Y *= factor
+	return p
+}
+
+// Scale multiplies two points component-wise
+func (p Point) Scale(other Point) Point {
+	p.X *= other.X
+	p.Y *= other.Y
+	return p
 }

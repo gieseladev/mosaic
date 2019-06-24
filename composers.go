@@ -1,6 +1,7 @@
 package mosaic
 
 import (
+	"errors"
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/fogleman/gg"
@@ -9,8 +10,14 @@ import (
 	"math"
 )
 
-var circleCornerAngles = []float64{0, geom.HalfPi, math.Pi, 3 * geom.HalfPi}
-var circleCornerPoints = []geom.Point{{1, 0}, {0, 1}, {-1, 0}, {0, -1}}
+var (
+	ErrInvalidImageCount = errors.New("invalid number of images")
+)
+
+var (
+	circleCornerAngles = []float64{0, geom.HalfPi, math.Pi, 3 * geom.HalfPi}
+	circleCornerPoints = []geom.Point{{1, 0}, {0, 1}, {-1, 0}, {0, -1}}
+)
 
 func CirclesPie(dc *gg.Context, images ...image.Image) error {
 	w := dc.Width()
@@ -70,6 +77,8 @@ func TilesPerfect(dc *gg.Context, images ...image.Image) error {
 	imgW := w / n
 	imgH := h / n
 
+	// TODO create m * n tiles
+
 	maxI := n * n
 	for i, img := range images {
 		if i > maxI {
@@ -86,7 +95,50 @@ func TilesPerfect(dc *gg.Context, images ...image.Image) error {
 }
 
 func TilesFocused(dc *gg.Context, images ...image.Image) error {
-	// TODO
+	if len(images) < 2 {
+		return ErrInvalidImageCount
+	}
+
+	w, h := dc.Width(), dc.Height()
+
+	totalSize := geom.NewPoint(float64(w), float64(h))
+
+	evenDiff := len(images) % 2
+	evenImages := len(images) - evenDiff
+	unevenImages := len(images) - (1 - evenDiff)
+
+	horizontalRatio := float64(unevenImages-1) / float64(unevenImages+1)
+	verticalRatio := float64(evenImages-2) / float64(evenImages)
+
+	focusSize := totalSize.Scale(geom.NewPoint(
+		horizontalRatio,
+		verticalRatio,
+	))
+	focusX, focusY := int(focusSize.X), int(focusSize.Y)
+
+	otherSize := totalSize.Sub(focusSize)
+	otherX, otherY := int(otherSize.X), int(otherSize.Y)
+
+	focusImg := imaging.Fill(images[0], focusX, focusY, imaging.Center, imaging.Lanczos)
+	dc.DrawImage(focusImg, 0, h-focusY)
+
+	trImg := imaging.Fill(images[1], otherX, otherY, imaging.Center, imaging.Lanczos)
+	dc.DrawImage(trImg, focusX, 0)
+
+	i := 1
+	for imgI := 2; imgI < len(images); imgI += 2 {
+		topImg := imaging.Fill(images[imgI], otherX, otherY, imaging.Center, imaging.Lanczos)
+		dc.DrawImageAnchored(topImg, w-i*otherX, 0, 1, 0)
+
+		rightI := imgI + 1
+		if rightI < len(images) {
+			rightImg := imaging.Fill(images[rightI], otherX, otherY, imaging.Center, imaging.Lanczos)
+			dc.DrawImage(rightImg, focusX, i*otherY)
+		}
+
+		i++
+	}
+
 	return nil
 }
 
@@ -148,6 +200,18 @@ func init() {
 			Composer: ComposerFunc(TilesDiamond),
 			Id:       "tiles-diamond",
 			Name:     "Diamond (Tile)",
+		},
+
+		ComposerInfo{
+			Composer: ComposerFunc(StripesVertical),
+			Id:       "stripes-vertical",
+			Name:     "Vertical (Stripes)",
+		},
+
+		ComposerInfo{
+			Composer: ComposerFunc(StripesVerticalMulti),
+			Id:       "stripes-vertical-multi",
+			Name:     "Vertical Multi (Stripes)",
 		},
 	)
 

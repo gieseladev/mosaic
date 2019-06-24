@@ -15,6 +15,8 @@ func GenerateComposerShowcase(images []image.Image) (image.Image, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		dc.Image()
 	}
 
 	return nil, nil
