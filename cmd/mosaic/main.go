@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/fogleman/gg"
 	"github.com/gieseladev/mosaic/internal/app/mosaicc"
+	"gopkg.in/urfave/cli.v2"
 	"os"
 )
 
@@ -22,8 +23,9 @@ func main() {
 				Usage: "generate the example image showing all composers",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "output, o",
-						Usage: "path to write output image to",
+						Name:    "output",
+						Aliases: []string{"o"},
+						Usage:   "path to write output image to",
 					},
 				},
 				Action: func(c *cli.Context) error {

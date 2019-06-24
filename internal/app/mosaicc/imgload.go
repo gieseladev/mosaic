@@ -1,15 +1,16 @@
 package mosaicc
 
 import (
-	"errors"
 	"fmt"
+	"github.com/fogleman/gg"
 	"image"
 	"strings"
 	"sync"
 )
 
 func LoadImage(location string) (image.Image, error) {
-	return nil, errors.New("WIP")
+	// TODO handle urls
+	return gg.LoadImage(location)
 }
 
 func LoadImages(locations []string) ([]image.Image, error) {
@@ -21,7 +22,7 @@ func LoadImages(locations []string) ([]image.Image, error) {
 	var images []image.Image
 	var errs []error
 	for _, location := range locations {
-		go func() {
+		go func(location string) {
 			img, err := LoadImage(location)
 
 			mut.Lock()
@@ -34,7 +35,7 @@ func LoadImages(locations []string) ([]image.Image, error) {
 			}
 
 			wg.Done()
-		}()
+		}(location)
 	}
 
 	wg.Wait()
