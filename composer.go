@@ -29,7 +29,37 @@ type ComposerInfo struct {
 	ImageCountHuman string
 	CheckImageCount func(count int) bool
 
-	RecommendedImageCount []int
+	RecommendedImageCounts []int
+}
+
+// RecommendImageCount recommends a suitable amount of images to use
+// which is guaranteed to be less or equal to the amount provided.
+func (ci ComposerInfo) RecommendImageCount(imageCount int) int {
+	var currentBest int
+	for _, c := range ci.RecommendedImageCounts {
+		if c > currentBest && c <= imageCount {
+			currentBest = c
+		}
+	}
+
+	// found a recommended count
+	if currentBest > 0 {
+		return currentBest
+	}
+
+	// no check provided, assume all values are possible
+	if ci.CheckImageCount == nil {
+		return imageCount
+	}
+
+	// check all counts and take the first that works
+	for i := imageCount; i > 0; i-- {
+		if ci.CheckImageCount(i) {
+			return i
+		}
+	}
+
+	return 0
 }
 
 var registeredComposers []ComposerInfo

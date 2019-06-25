@@ -12,6 +12,9 @@ func OuterSquareRadius(r float64) float64 {
 	return math.Sqrt(2*(r*r)) / 2
 }
 
+// QuarterPi represents PI / 4
+const QuarterPi = math.Pi / 4
+
 // HalfPi represents PI / 2
 const HalfPi = math.Pi / 2
 

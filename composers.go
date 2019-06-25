@@ -8,6 +8,7 @@ import (
 	"github.com/gieseladev/mosaic/pkg/geom"
 	"image"
 	"math"
+	"sync"
 )
 
 var (
@@ -34,7 +35,7 @@ func CirclesPie(dc *gg.Context, images ...image.Image) error {
 
 	maskDC := gg.NewContext(w, h)
 	radius := geom.InnerSquareRadius(float64(s))
-	centerPoint := geom.NewPoint(float64(w)/2, float64(h)/2)
+	centerPoint := geom.Pt(float64(w)/2, float64(h)/2)
 
 	for i, img := range images {
 		maskDC.Clear()
@@ -43,15 +44,12 @@ func CirclesPie(dc *gg.Context, images ...image.Image) error {
 		drawSlice(maskDC, centerPoint.X, centerPoint.Y, radius, startAngle, endAngle)
 		maskDC.Fill()
 
-		err := dc.SetMask(maskDC.AsMask())
-		if err != nil {
-			return err
-		}
+		_ = dc.SetMask(maskDC.AsMask())
 
-		rect := geom.NewRectContainingPoints(
+		rect := geom.RectContainingPoints(
 			centerPoint,
-			geom.NewPointFromPolar(radius, startAngle).Add(centerPoint),
-			geom.NewPointFromPolar(radius, endAngle).Add(centerPoint),
+			geom.PtFromPolar(radius, startAngle).Add(centerPoint),
+			geom.PtFromPolar(radius, endAngle).Add(centerPoint),
 		)
 
 		// ensure the rect covers all of the circle
@@ -94,7 +92,7 @@ func TilesFocused(dc *gg.Context, images ...image.Image) error {
 
 	w, h := dc.Width(), dc.Height()
 
-	totalSize := geom.NewPoint(float64(w), float64(h))
+	totalSize := geom.Pt(float64(w), float64(h))
 
 	evenDiff := len(images) % 2
 	evenImages := len(images) - evenDiff
@@ -103,7 +101,7 @@ func TilesFocused(dc *gg.Context, images ...image.Image) error {
 	horizontalRatio := float64(unevenImages-1) / float64(unevenImages+1)
 	verticalRatio := float64(evenImages-2) / float64(evenImages)
 
-	focusSize := totalSize.Scale(geom.NewPoint(
+	focusSize := totalSize.Scale(geom.Pt(
 		horizontalRatio,
 		verticalRatio,
 	))
@@ -136,7 +134,83 @@ func TilesFocused(dc *gg.Context, images ...image.Image) error {
 }
 
 func TilesDiamond(dc *gg.Context, images ...image.Image) error {
-	// TODO
+	if len(images) < 1 {
+		return ErrInvalidImageCount
+	}
+
+	w, h := dc.Width(), dc.Height()
+	sqSize := geom.
+		RectWithSideLengths(geom.Pt(float64(w), float64(h))).
+		InnerCenterSquare()
+	center := sqSize.Center()
+	diaSquare := sqSize.ScaleCenter(3 * math.Sqrt2 / (13 + math.Sqrt2))
+
+	diaPoly := diaSquare.RotateAroundCenter(geom.QuarterPi)
+	diaBounds := diaPoly.BoundingRect()
+	diaPolySize := int(diaBounds.DX())
+
+	img := imaging.Fill(images[0], diaPolySize, diaPolySize, imaging.Center, imaging.Lanczos)
+
+	maskDC := gg.NewContext(w, h)
+	drawPolygon(maskDC, diaPoly)
+	maskDC.Fill()
+	_ = dc.SetMask(maskDC.AsMask())
+	dc.DrawImageAnchored(img, w/2, h/2, .5, .5)
+
+	if len(images) < 5 {
+		return nil
+	}
+
+	var mut sync.Mutex
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	drawImages := func(images []image.Image, poly geom.Polygon, radius float64, startAngle float64) {
+		maskDC := gg.NewContext(w, h)
+
+		bounds := poly.BoundingRect()
+		polyWidth := int(bounds.DX())
+		polyHeight := int(bounds.DY())
+
+		for i, img := range images {
+			translation := geom.PtFromPolar(radius, startAngle+float64(i)*geom.HalfPi)
+			pos := translation.Add(center)
+
+			// no need to clear mask because images are far enough apart
+			drawPolygon(maskDC, poly.Translate(translation))
+			maskDC.Fill()
+
+			img = imaging.Fill(img, polyWidth, polyHeight, imaging.Center, imaging.Lanczos)
+
+			mut.Lock()
+			_ = dc.SetMask(maskDC.AsMask())
+			dc.DrawImageAnchored(img, int(pos.X), int(pos.Y), .5, .5)
+			mut.Unlock()
+		}
+
+		wg.Done()
+	}
+
+	wg.Add(1)
+	go drawImages(images[1:5], diaPoly, diaSquare.DX(), geom.QuarterPi)
+
+	if len(images) < 9 {
+		return nil
+	}
+
+	smallDiaPoly := diaPoly.ScaleAroundCenter(2. / 3)
+	smallDiaBounds := smallDiaPoly.BoundingRect()
+
+	wg.Add(1)
+	go drawImages(images[5:9], smallDiaPoly, (diaBounds.DX()+smallDiaBounds.DX())/2, 0)
+
+	if len(images) < 13 {
+		return nil
+	}
+
+	wg.Add(1)
+	go drawImages(images[9:13], smallDiaPoly, diaSquare.DX()*11/6, geom.QuarterPi)
+
 	return nil
 }
 
@@ -155,10 +229,7 @@ func StripesVertical(dc *gg.Context, images ...image.Image) error {
 		maskDC.DrawRectangle(iF64*stripeWidth, 0, stripeWidth, float64(h))
 		maskDC.Fill()
 
-		err := dc.SetMask(maskDC.AsMask())
-		if err != nil {
-			return err
-		}
+		_ = dc.SetMask(maskDC.AsMask())
 
 		dc.DrawImage(img, 0, 0)
 	}
@@ -178,7 +249,7 @@ func init() {
 			Id:       "circles-pie",
 			Name:     "Pie (Circle)",
 
-			RecommendedImageCount: []int{3, 5},
+			RecommendedImageCounts: []int{3, 5},
 		},
 
 		ComposerInfo{
@@ -186,7 +257,7 @@ func init() {
 			Id:       "tiles-perfect",
 			Name:     "Perfect (Tile)",
 
-			RecommendedImageCount: []int{4, 6, 8},
+			RecommendedImageCounts: []int{4, 6, 9, 12, 16},
 		},
 		ComposerInfo{
 			Composer: ComposerFunc(TilesFocused),
@@ -197,11 +268,15 @@ func init() {
 			CheckImageCount: func(count int) bool {
 				return count >= 2
 			},
+
+			RecommendedImageCounts: []int{4, 5, 6, 7, 8, 9},
 		},
 		ComposerInfo{
 			Composer: ComposerFunc(TilesDiamond),
 			Id:       "tiles-diamond",
 			Name:     "Diamond (Tile)",
+
+			RecommendedImageCounts: []int{5, 9, 13},
 		},
 
 		ComposerInfo{
@@ -209,7 +284,7 @@ func init() {
 			Id:       "stripes-vertical",
 			Name:     "Vertical (Stripes)",
 
-			RecommendedImageCount: []int{3, 4},
+			RecommendedImageCounts: []int{3, 4, 5},
 		},
 
 		ComposerInfo{

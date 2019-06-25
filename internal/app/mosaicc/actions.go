@@ -22,21 +22,24 @@ func GenerateComposerShowcase(images []image.Image) (image.Image, error) {
 		panelsY*panelHeight+(panelsY-1)*marginY)
 
 	for i, composer := range composers {
-		composerDC := gg.NewContext(panelWidth, panelHeight)
+		compImages := images[:composer.RecommendImageCount(len(images))]
 
 		compositionDC := gg.NewContext(panelWidth, panelWidth)
-		err := composer.Compose(compositionDC, images...)
+		err := composer.Compose(compositionDC, compImages...)
 		if err != nil {
 			return nil, err
 		}
 
+		composerDC := gg.NewContext(panelWidth, panelHeight)
+
 		composerDC.DrawImage(compositionDC.Image(), 0, panelHeight-panelWidth)
 
-		composerDC.SetColor(color.Black)
 		// TODO nonononono, this ain't it, chief
 		if err = composerDC.LoadFontFace("/windows/fonts/arial.ttf", fontPoints); err != nil {
 			return nil, err
 		}
+
+		composerDC.SetColor(color.Black)
 		//_, tH := composerDC.MeasureMultilineString(composer.Name, lineSpacing)
 		composerDC.DrawStringWrapped(composer.Name, 0, float64(panelHeight-panelWidth-marginY), 0, 1, float64(panelWidth), lineSpacing, gg.AlignCenter)
 

@@ -12,30 +12,20 @@ func loadImage(path string) (image.Image, error) {
 	return gg.LoadImage(path)
 }
 
-func loadImages(paths ...string) ([]image.Image, error) {
-	images := make([]image.Image, len(paths))
+func loadInputImages(t testing.TB, names ...string) ([]image.Image, bool) {
+	images := make([]image.Image, len(names))
 
-	for i, path := range paths {
-		img, err := loadImage(path)
-		if err != nil {
-			return images, err
+	for i := 0; i < len(names); i++ {
+		img, err := loadImage(fmt.Sprintf("test/data/input/%s", names[i]))
+		ok := assert.NoError(t, err, fmt.Sprintf("couldn't load input images: %v", names))
+		if !ok {
+			return images, ok
 		}
 
 		images[i] = img
 	}
 
-	return images, nil
-}
-
-func loadInputImages(t *testing.T, names ...string) ([]image.Image, bool) {
-	for i := 0; i < len(names); i++ {
-		names[i] = fmt.Sprintf("test/data/input/%s", names[i])
-	}
-
-	images, err := loadImages(names...)
-
-	ok := assert.NoError(t, err, fmt.Sprintf("couldn't load input images: %v", names))
-	return images, ok
+	return images, true
 }
 
 func loadOutputImage(t *testing.T, name string) (image.Image, bool) {
@@ -123,6 +113,21 @@ func (c *ComposerTest) ExpectedImage(t *testing.T) (image.Image, bool) {
 	return loadOutputImage(t, c.outputImageName)
 }
 
+func (c *ComposerTest) GetComposer(t testing.TB) (composer Composer, ok bool) {
+	composerID := c.ComposerID
+	ok = assert.NotEmpty(t, composerID, "composer id not provided")
+	if !ok {
+		return
+	}
+
+	composer, ok = GetComposer(composerID)
+	if !ok {
+		ok = assert.Fail(t, fmt.Sprintf("composer not found: %q", composerID))
+	}
+
+	return
+}
+
 func (c *ComposerTest) saveActualImage(t *testing.T, dc *gg.Context) bool {
 	err := dc.SavePNG(fmt.Sprintf("%s/%s-actual.png",
 		"test/data/output",
@@ -133,20 +138,14 @@ func (c *ComposerTest) saveActualImage(t *testing.T, dc *gg.Context) bool {
 }
 
 func (c *ComposerTest) Test(t *testing.T) (ok bool) {
-	composerID := c.ComposerID
-	ok = assert.NotEmpty(t, composerID, "composer id not provided")
+	composer, ok := c.GetComposer(t)
 	if !ok {
 		return
 	}
 
-	composer, ok := GetComposer(composerID)
-	if !ok {
-		return assert.Fail(t, fmt.Sprintf("composer not found: %q", composerID))
-	}
-
 	images, ok := loadInputImages(t, c.InputImageNames...)
 	if !ok {
-		return ok
+		return
 	}
 
 	dc := gg.NewContext(c.ContextWidth(), c.ContextHeight())
@@ -168,6 +167,26 @@ func (c *ComposerTest) Test(t *testing.T) (ok bool) {
 	}
 
 	return
+}
+
+func (c *ComposerTest) Benchmark(b *testing.B) {
+	composer, ok := c.GetComposer(b)
+	if !ok {
+		return
+	}
+
+	images, ok := loadInputImages(b, c.InputImageNames...)
+	if !ok {
+		return
+	}
+
+	dc := gg.NewContext(c.ContextWidth(), c.ContextHeight())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dc.Clear()
+		_ = composer.Compose(dc, images...)
+	}
 }
 
 var composerTests = []*ComposerTest{
@@ -229,6 +248,24 @@ var composerTests = []*ComposerTest{
 		},
 	},
 	{
+		ComposerID: "tiles-diamond",
+		InputImageNames: []string{
+			"b-martinez-744134.jpg",
+			"i-palacio-Y20JJ_ddy9M.jpg",
+			"j-crop-764891.jpg",
+			"j-han-456323.jpg",
+			"j-pereira-fSGsKbICefw.jpg",
+			"j-wejxKZ-9IZg.jpg",
+			"m-spiske-78531.jpg",
+			"m-wingen-PDX_a_82obo.jpg",
+			"n-perea-W8BRzoUTHNA.jpg",
+			"p-wooten-FMiczIq8orU.jpg",
+			"s-erixon-753182.jpg",
+			"s-imbrock-487035.jpg",
+			"t-mikuckis-hbnH0ILjUZE.jpg",
+		},
+	},
+	{
 		ComposerID: "stripes-vertical",
 		InputImageNames: []string{
 			"j-crop-764891.jpg",
@@ -240,8 +277,19 @@ var composerTests = []*ComposerTest{
 
 func TestComposers(t *testing.T) {
 	for _, c := range composerTests {
+		c := c
+
 		t.Run(c.TestName(), func(t *testing.T) {
+			t.Parallel()
 			c.Test(t)
+		})
+	}
+}
+
+func BenchmarkComposers(b *testing.B) {
+	for _, c := range composerTests {
+		b.Run(c.TestName(), func(b *testing.B) {
+			c.Benchmark(b)
 		})
 	}
 }
