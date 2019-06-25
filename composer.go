@@ -18,17 +18,18 @@ func (f ComposerFunc) Compose(dc *gg.Context, images ...image.Image) error {
 	return f(dc, images...)
 }
 
-// TODO:
-//  - recommended amount of images,
-//  - required amount of images (function check and human repr)
-//  - description?
-
 // ComposerInfo is a Composer with additional information.
 type ComposerInfo struct {
 	Composer
 
-	Id   string
-	Name string
+	Id          string
+	Name        string
+	Description string
+
+	ImageCountHuman string
+	CheckImageCount func(count int) bool
+
+	RecommendedImageCount []int
 }
 
 var registeredComposers []ComposerInfo

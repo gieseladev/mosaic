@@ -177,17 +177,26 @@ func init() {
 			Composer: ComposerFunc(CirclesPie),
 			Id:       "circles-pie",
 			Name:     "Pie (Circle)",
+
+			RecommendedImageCount: []int{3, 5},
 		},
 
 		ComposerInfo{
 			Composer: ComposerFunc(TilesPerfect),
 			Id:       "tiles-perfect",
 			Name:     "Perfect (Tile)",
+
+			RecommendedImageCount: []int{4, 6, 8},
 		},
 		ComposerInfo{
 			Composer: ComposerFunc(TilesFocused),
 			Id:       "tiles-focused",
 			Name:     "Focused (Tile)",
+
+			ImageCountHuman: "more than two, optimally more than three",
+			CheckImageCount: func(count int) bool {
+				return count >= 2
+			},
 		},
 		ComposerInfo{
 			Composer: ComposerFunc(TilesDiamond),
@@ -199,6 +208,8 @@ func init() {
 			Composer: ComposerFunc(StripesVertical),
 			Id:       "stripes-vertical",
 			Name:     "Vertical (Stripes)",
+
+			RecommendedImageCount: []int{3, 4},
 		},
 
 		ComposerInfo{
