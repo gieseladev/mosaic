@@ -189,6 +189,17 @@ var composerTests = []*ComposerTest{
 		},
 	},
 	{
+		ComposerID: "tiles-perfect",
+		InputImageNames: []string{
+			"s-erixon-753182.jpg",
+			"j-han-456323.jpg",
+			"m-spiske-78531.jpg",
+			"b-martinez-744134.jpg",
+			"s-imbrock-487035.jpg",
+			"j-crop-764891.jpg",
+		},
+	},
+	{
 		ComposerID: "tiles-focused",
 		InputImageNames: []string{
 			"s-erixon-753182.jpg",

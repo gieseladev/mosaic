@@ -72,21 +72,14 @@ func CirclesPie(dc *gg.Context, images ...image.Image) error {
 func TilesPerfect(dc *gg.Context, images ...image.Image) error {
 	w := dc.Width()
 	h := dc.Height()
-	n := int(math.Sqrt(float64(len(images))))
 
-	imgW := w / n
-	imgH := h / n
+	nH, nV := geom.FindBalancedFactors(len(images))
+	imgW := w / nH
+	imgH := h / nV
 
-	// TODO create m * n tiles
-
-	maxI := n * n
 	for i, img := range images {
-		if i > maxI {
-			break
-		}
-
-		column := i % n
-		row := i / n
+		column := i % nH
+		row := i / nH
 		img = imaging.Fill(img, imgW, imgH, imaging.Center, imaging.Lanczos)
 		dc.DrawImage(img, column*imgW, row*imgH)
 	}
