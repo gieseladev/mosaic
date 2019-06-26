@@ -14,6 +14,7 @@ type Composer interface {
 // A ComposerFunc is a Composer which itself is a function.
 type ComposerFunc func(dc *gg.Context, images ...image.Image) error
 
+// Compose calls the underlying function with the given arguments.
 func (f ComposerFunc) Compose(dc *gg.Context, images ...image.Image) error {
 	return f(dc, images...)
 }

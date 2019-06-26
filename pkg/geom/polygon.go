@@ -31,6 +31,7 @@ func (pg Polygon) mapVertices(f func(vertex Point) Point) Polygon {
 	return Poly(vertices...)
 }
 
+// Center returns the centroid of the polygon.
 func (pg Polygon) Center() Point {
 	if pg.Empty() {
 		return Point{}

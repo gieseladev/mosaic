@@ -12,6 +12,8 @@ import (
 )
 
 var (
+	// ErrInvalidImageCount is the error returned, when an invalid amount of
+	// images is passed to a composer.
 	ErrInvalidImageCount = errors.New("invalid number of images")
 )
 

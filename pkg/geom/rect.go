@@ -61,17 +61,17 @@ func (r Rectangle) TopLeft() Point {
 	return r.Min
 }
 
-// TopLeft returns the top right corner point
+// TopRight returns the top right corner point
 func (r Rectangle) TopRight() Point {
 	return Pt(r.Max.X, r.Min.Y)
 }
 
-// TopLeft returns the bottom right corner point
+// BottomRight returns the bottom right corner point
 func (r Rectangle) BottomRight() Point {
 	return r.Max
 }
 
-// TopLeft returns the bottom left corner point
+// BottomLeft returns the bottom left corner point
 func (r Rectangle) BottomLeft() Point {
 	return Pt(r.Min.X, r.Max.Y)
 }
@@ -159,7 +159,7 @@ func (r Rectangle) RotateAroundCenter(angle float64) Polygon {
 	return r.RotateAround(angle, r.Center())
 }
 
-// InnerSquare returns a new square which fits inside of the rectangle.
+// InnerCenterSquare returns a new square which fits inside of the rectangle.
 func (r Rectangle) InnerCenterSquare() Rectangle {
 	w, h := r.Width(), r.Height()
 	s := w
