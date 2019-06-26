@@ -4,16 +4,33 @@ import (
 	"fmt"
 	"github.com/fogleman/gg"
 	"image"
+	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 )
+
+func loadImageFromURL(u string) (image.Image, error) {
+	resp, err := http.Get(u)
+	if err != nil {
+		return nil, nil
+	}
+
+	img, _, err := image.Decode(resp.Body)
+	_ = resp.Body.Close()
+	return img, err
+}
 
 // LoadImage loads an image from the given location.
 // The location can be either a url, or a filepath pointing
 // to an image.
 func LoadImage(location string) (image.Image, error) {
-	// TODO handle urls
-	return gg.LoadImage(location)
+	_, err := url.ParseRequestURI(location)
+	if err == nil {
+		return loadImageFromURL(location)
+	} else {
+		return gg.LoadImage(location)
+	}
 }
 
 // LoadImages loads the given images in parallel.
