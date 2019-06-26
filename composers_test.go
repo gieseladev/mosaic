@@ -5,6 +5,8 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/stretchr/testify/assert"
 	"image"
+	"image/png"
+	"io"
 	"testing"
 )
 
@@ -59,7 +61,7 @@ func assertImagesEqual(t *testing.T, expected, actual image.Image, msgAndArgs ..
 	}
 
 	diff := float64(diffPixels) / float64(totalPixels)
-	if diff >= .05 {
+	if diff >= .03 {
 		return assert.Fail(t, fmt.Sprintf("Images too different: %g%%", 100*diff))
 	}
 
@@ -79,7 +81,7 @@ type ComposerTest struct {
 
 func (c *ComposerTest) ContextWidth() int {
 	if c.contextWidth == 0 {
-		c.contextWidth = 250
+		c.contextWidth = 50
 	}
 
 	return c.contextWidth
@@ -87,7 +89,7 @@ func (c *ComposerTest) ContextWidth() int {
 
 func (c *ComposerTest) ContextHeight() int {
 	if c.contextHeight == 0 {
-		c.contextHeight = 250
+		c.contextHeight = 50
 	}
 
 	return c.contextHeight
@@ -137,6 +139,20 @@ func (c *ComposerTest) saveActualImage(t *testing.T, dc *gg.Context) bool {
 	return assert.NoError(t, err, "couldn't save actual output")
 }
 
+func (c *ComposerTest) pngEncoded(t *testing.T, im image.Image) (image.Image, bool) {
+
+	r, w := io.Pipe()
+	go func() {
+		_ = png.Encode(w, im)
+		_ = w.Close()
+	}()
+
+	img, _, err := image.Decode(r)
+	ok := assert.NoError(t, err, "couldn't encode image")
+
+	return img, ok
+}
+
 func (c *ComposerTest) Test(t *testing.T) (ok bool) {
 	composer, ok := c.GetComposer(t)
 	if !ok {
@@ -155,13 +171,18 @@ func (c *ComposerTest) Test(t *testing.T) (ok bool) {
 		return
 	}
 
+	actual, ok := c.pngEncoded(t, dc.Image())
+	if !ok {
+		return
+	}
+
 	expected, ok := c.ExpectedImage(t)
 	if !ok {
 		c.saveActualImage(t, dc)
 		return
 	}
 
-	ok = assertImagesEqual(t, expected, dc.Image())
+	ok = assertImagesEqual(t, expected, actual)
 	if !ok {
 		c.saveActualImage(t, dc)
 	}
@@ -271,6 +292,36 @@ var composerTests = []*ComposerTest{
 			"j-crop-764891.jpg",
 			"s-imbrock-487035.jpg",
 			"s-erixon-753182.jpg",
+		},
+	},
+	{
+		ComposerID: "stripes-vertical-multi",
+		InputImageNames: []string{
+			"t-mikuckis-hbnH0ILjUZE.jpg",
+			"s-imbrock-487035.jpg",
+			"s-erixon-753182.jpg",
+		},
+	},
+	{
+		ComposerID: "stripes-vertical-multi",
+		InputImageNames: []string{
+			"t-mikuckis-hbnH0ILjUZE.jpg",
+			"s-imbrock-487035.jpg",
+			"s-erixon-753182.jpg",
+			"p-wooten-FMiczIq8orU.jpg",
+			"n-perea-W8BRzoUTHNA.jpg",
+		},
+	},
+	{
+		ComposerID: "stripes-vertical-multi",
+		InputImageNames: []string{
+			"t-mikuckis-hbnH0ILjUZE.jpg",
+			"s-imbrock-487035.jpg",
+			"s-erixon-753182.jpg",
+			"p-wooten-FMiczIq8orU.jpg",
+			"n-perea-W8BRzoUTHNA.jpg",
+			"m-wingen-PDX_a_82obo.jpg",
+			"m-spiske-78531.jpg",
 		},
 	},
 }

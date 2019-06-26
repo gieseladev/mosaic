@@ -239,7 +239,55 @@ func StripesVertical(dc *gg.Context, images ...image.Image) error {
 }
 
 func StripesVerticalMulti(dc *gg.Context, images ...image.Image) error {
-	// TODO
+	imgCountF := float64(len(images))
+
+	stripeCountF := math.Ceil(math.Sqrt(imgCountF))
+	stripeCount := int(stripeCountF)
+
+	completeLevelsCountF := math.Floor(imgCountF / stripeCountF)
+	completeLevelsCount := int(completeLevelsCountF)
+
+	remainingImgCountF := imgCountF - stripeCountF*completeLevelsCountF
+	remainingImgCount := int(remainingImgCountF)
+
+	stripeImageCounts := make([]int, stripeCount)
+	for i := 0; i < stripeCount; i++ {
+		stripeImageCounts[i] = completeLevelsCount
+	}
+
+	// should we place an extra image in the middle?
+	if remainingImgCount%2 != 0 && stripeCount%2 != 0 {
+		midI := stripeCount / 2
+		stripeImageCounts[midI]++
+		remainingImgCount--
+	}
+
+	for leftI := 0; leftI < remainingImgCount; leftI += 2 {
+		stripeImageCounts[leftI]++
+
+		rightI := leftI + 1
+		if rightI < remainingImgCount {
+			stripeImageCounts[len(stripeImageCounts)-rightI]++
+		}
+	}
+
+	stripeWidthF := float64(dc.Width()) / stripeCountF
+	stripeWidth := int(stripeWidthF)
+
+	var imgI int
+	for stripeI, stripeImgCount := range stripeImageCounts {
+		var yOffset int
+
+		for i := 0; i < stripeImgCount; i++ {
+			imgHeight := dc.Height() / stripeImgCount
+			img := imaging.Fill(images[imgI], stripeWidth, imgHeight, imaging.Center, imaging.Lanczos)
+			imgI++
+
+			dc.DrawImage(img, int(float64(stripeI)*stripeWidthF), yOffset)
+			yOffset += imgHeight
+		}
+	}
+
 	return nil
 }
 
@@ -292,6 +340,8 @@ func init() {
 			Composer: ComposerFunc(StripesVerticalMulti),
 			Id:       "stripes-vertical-multi",
 			Name:     "Vertical Multi (Stripes)",
+
+			RecommendedImageCounts: []int{3, 5, 7},
 		},
 	)
 
