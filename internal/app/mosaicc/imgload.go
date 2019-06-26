@@ -21,6 +21,8 @@ func LoadImages(locations []string) ([]image.Image, error) {
 	var mut sync.Mutex
 	var wg sync.WaitGroup
 
+	// TODO preserve order
+
 	wg.Add(len(locations))
 
 	var images []image.Image

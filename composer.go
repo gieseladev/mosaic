@@ -3,6 +3,7 @@ package mosaic
 import (
 	"github.com/fogleman/gg"
 	"image"
+	"sort"
 )
 
 // A Composer creates image compositions
@@ -88,4 +89,37 @@ func GetComposer(id string) (ComposerInfo, bool) {
 // GetComposers returns a slice containing all composers.
 func GetComposers() []ComposerInfo {
 	return registeredComposers
+}
+
+// RecommendComposers returns a slice of composers which are suitable
+// for the given image count.
+func RecommendComposers(count int) []ComposerInfo {
+	type ComposerComp struct {
+		C             ComposerInfo
+		RecImageCount int
+	}
+
+	composerComparisons := make([]ComposerComp, 0)
+
+	for _, composer := range registeredComposers {
+		recommended := composer.RecommendImageCount(count)
+		if recommended != 0 {
+			composerComparisons = append(composerComparisons, ComposerComp{
+				composer,
+				recommended,
+			})
+		}
+
+	}
+
+	sort.Slice(composerComparisons, func(i, j int) bool {
+		return composerComparisons[i].RecImageCount < composerComparisons[j].RecImageCount
+	})
+
+	composers := make([]ComposerInfo, len(composerComparisons))
+	for i, cc := range composerComparisons {
+		composers[i] = cc.C
+	}
+
+	return composers
 }
