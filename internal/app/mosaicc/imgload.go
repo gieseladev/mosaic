@@ -42,8 +42,6 @@ func LoadImages(locations []string) ([]image.Image, error) {
 	}
 
 	resultChan := make(chan LoadResult)
-
-	lastIndex := len(locations) - 1
 	for i, location := range locations {
 		go func(i int, location string) {
 			img, err := LoadImage(location)
@@ -56,21 +54,19 @@ func LoadImages(locations []string) ([]image.Image, error) {
 				Image: img,
 				Err:   err,
 			}
-
-			if i == lastIndex {
-				close(resultChan)
-			}
 		}(i, location)
 	}
 
 	errs := make([]error, 0)
 	results := make([]LoadResult, 0, len(locations))
-	for result := range resultChan {
+	for i := 0; i < len(locations); i++ {
+		result := <-resultChan
 		if result.Err == nil {
 			results = append(results, result)
 		} else {
 			errs = append(errs, result.Err)
 		}
+
 	}
 
 	// preserve original order
