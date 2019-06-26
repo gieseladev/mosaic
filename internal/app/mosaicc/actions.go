@@ -8,6 +8,8 @@ import (
 	"image/color"
 )
 
+// GenerateComposerShowcase generates an image containing a sample of all
+// composers.
 func GenerateComposerShowcase(images []image.Image) (image.Image, error) {
 	composers := mosaic.GetComposers()
 	panelsX, panelsY := geom.FindBalancedFactors(len(composers))
@@ -40,7 +42,6 @@ func GenerateComposerShowcase(images []image.Image) (image.Image, error) {
 		}
 
 		composerDC.SetColor(color.Black)
-		//_, tH := composerDC.MeasureMultilineString(composer.Name, lineSpacing)
 		composerDC.DrawStringWrapped(composer.Name, 0, float64(panelHeight-panelWidth-marginY), 0, 1, float64(panelWidth), lineSpacing, gg.AlignCenter)
 
 		column := i % panelsX

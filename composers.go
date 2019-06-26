@@ -60,7 +60,7 @@ func CirclesPie(dc *gg.Context, images ...image.Image) error {
 			}
 		}
 
-		img = imaging.Fill(img, int(rect.DX()), int(rect.DY()), imaging.Center, imaging.Lanczos)
+		img = imaging.Fill(img, int(rect.Width()), int(rect.Height()), imaging.Center, imaging.Lanczos)
 		dc.DrawImage(img, int(rect.Min.X), int(rect.Min.Y))
 	}
 
@@ -143,11 +143,11 @@ func TilesDiamond(dc *gg.Context, images ...image.Image) error {
 		RectWithSideLengths(geom.Pt(float64(w), float64(h))).
 		InnerCenterSquare()
 	center := sqSize.Center()
-	diaSquare := sqSize.ScaleCenter(3 * math.Sqrt2 / (13 + math.Sqrt2))
+	diaSquare := sqSize.ScaleFromCenter(3 * math.Sqrt2 / (13 + math.Sqrt2))
 
 	diaPoly := diaSquare.RotateAroundCenter(geom.QuarterPi)
 	diaBounds := diaPoly.BoundingRect()
-	diaPolySize := int(diaBounds.DX())
+	diaPolySize := int(diaBounds.Width())
 
 	img := imaging.Fill(images[0], diaPolySize, diaPolySize, imaging.Center, imaging.Lanczos)
 
@@ -169,8 +169,8 @@ func TilesDiamond(dc *gg.Context, images ...image.Image) error {
 		maskDC := gg.NewContext(w, h)
 
 		bounds := poly.BoundingRect()
-		polyWidth := int(bounds.DX())
-		polyHeight := int(bounds.DY())
+		polyWidth := int(bounds.Width())
+		polyHeight := int(bounds.Height())
 
 		for i, img := range images {
 			translation := geom.PtFromPolar(radius, startAngle+float64(i)*geom.HalfPi)
@@ -192,24 +192,24 @@ func TilesDiamond(dc *gg.Context, images ...image.Image) error {
 	}
 
 	wg.Add(1)
-	go drawImages(images[1:5], diaPoly, diaSquare.DX(), geom.QuarterPi)
+	go drawImages(images[1:5], diaPoly, diaSquare.Width(), geom.QuarterPi)
 
 	if len(images) < 9 {
 		return nil
 	}
 
-	smallDiaPoly := diaPoly.ScaleAroundCenter(2. / 3)
+	smallDiaPoly := diaPoly.ScaleFromCenter(2. / 3)
 	smallDiaBounds := smallDiaPoly.BoundingRect()
 
 	wg.Add(1)
-	go drawImages(images[5:9], smallDiaPoly, (diaBounds.DX()+smallDiaBounds.DX())/2, 0)
+	go drawImages(images[5:9], smallDiaPoly, (diaBounds.Width()+smallDiaBounds.Width())/2, 0)
 
 	if len(images) < 13 {
 		return nil
 	}
 
 	wg.Add(1)
-	go drawImages(images[9:13], smallDiaPoly, diaSquare.DX()*11/6, geom.QuarterPi)
+	go drawImages(images[9:13], smallDiaPoly, diaSquare.Width()*11/6, geom.QuarterPi)
 
 	return nil
 }

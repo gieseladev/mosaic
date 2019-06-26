@@ -1,6 +1,6 @@
 package geom
 
-// A Polygon represents any shape by connecting the points.
+// A Polygon represents any polygon.
 type Polygon struct {
 	Vertices []Point
 }
@@ -20,13 +20,15 @@ func (pg Polygon) BoundingRect() Rectangle {
 	return RectContainingPoints(pg.Vertices...)
 }
 
-func (pg Polygon) mapVertices(f func(vertex Point) Point) []Point {
+// mapVertices returns a polygon with the given function applied to each
+// vertex.
+func (pg Polygon) mapVertices(f func(vertex Point) Point) Polygon {
 	vertices := make([]Point, len(pg.Vertices))
 	for i, v := range pg.Vertices {
 		vertices[i] = f(v)
 	}
 
-	return vertices
+	return Poly(vertices...)
 }
 
 func (pg Polygon) Center() Point {
@@ -46,24 +48,27 @@ func (pg Polygon) Center() Point {
 
 // Translate moves the polygon by the given amount.
 func (pg Polygon) Translate(p Point) Polygon {
-	return Poly(pg.mapVertices(func(vertex Point) Point {
+	return pg.mapVertices(func(vertex Point) Point {
 		return vertex.Add(p)
-	})...)
+	})
 }
 
+// Scale scales the polygon from the origin.
 func (pg Polygon) Scale(factor float64) Polygon {
-	return Poly(pg.mapVertices(func(vertex Point) Point {
+	return pg.mapVertices(func(vertex Point) Point {
 		return vertex.Mul(factor)
-	})...)
+	})
 }
 
-func (pg Polygon) ScaleAround(factor float64, origin Point) Polygon {
+// ScaleFrom scales the polygon from a given point.
+func (pg Polygon) ScaleFrom(factor float64, origin Point) Polygon {
 	return pg.
 		Translate(origin.Neg()).
 		Scale(factor).
 		Translate(origin)
 }
 
-func (pg Polygon) ScaleAroundCenter(factor float64) Polygon {
-	return pg.ScaleAround(factor, pg.Center())
+// ScaleFromCenter scales the polygon from the center.
+func (pg Polygon) ScaleFromCenter(factor float64) Polygon {
+	return pg.ScaleFrom(factor, pg.Center())
 }

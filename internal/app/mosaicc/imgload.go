@@ -8,11 +8,15 @@ import (
 	"sync"
 )
 
+// LoadImage loads an image from the given location.
+// The location can be either a url, or a filepath pointing
+// to an image.
 func LoadImage(location string) (image.Image, error) {
 	// TODO handle urls
 	return gg.LoadImage(location)
 }
 
+// LoadImages loads the given images in parallel.
 func LoadImages(locations []string) ([]image.Image, error) {
 	var mut sync.Mutex
 	var wg sync.WaitGroup

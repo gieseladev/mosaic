@@ -6,6 +6,7 @@ import (
 )
 
 // A Rectangle represents a rectangle using 2 corner points.
+// Only rectangles aligned with the coordinate axes can be represented.
 type Rectangle struct {
 	Min, Max Point
 }
@@ -35,24 +36,24 @@ func (r Rectangle) String() string {
 	return fmt.Sprintf("Rect(%v / %v)", r.Min, r.Max)
 }
 
-// DX returns the difference between the x coordinates (i.e. the width).
-func (r Rectangle) DX() float64 {
+// Width returns the width of the rectangle.
+func (r Rectangle) Width() float64 {
 	return r.Max.X - r.Min.X
 }
 
-// DY returns the difference between the y coordinates (i.e. the height).
-func (r Rectangle) DY() float64 {
+// Height returns the height of the rectangle).
+func (r Rectangle) Height() float64 {
 	return r.Max.Y - r.Min.Y
 }
 
 // MinSide return the length of the smaller side.
 func (r Rectangle) MinSide() float64 {
-	return math.Min(r.DX(), r.DY())
+	return math.Min(r.Width(), r.Height())
 }
 
 // MaxSide returns the length of the bigger side.
 func (r Rectangle) MaxSide() float64 {
-	return math.Max(r.DX(), r.DY())
+	return math.Max(r.Width(), r.Height())
 }
 
 // TopLeft returns the top left corner point
@@ -120,7 +121,7 @@ func (r Rectangle) Translate(p Point) Rectangle {
 	}
 }
 
-// Scale scales the rectangle.
+// Scale scales the rectangle from the origin.
 func (r Rectangle) Scale(factor float64) Rectangle {
 	return Rectangle{
 		Min: r.Min.Mul(factor),
@@ -128,15 +129,17 @@ func (r Rectangle) Scale(factor float64) Rectangle {
 	}
 }
 
-// ScaleCenter scales the rectangle from the center.
-func (r Rectangle) ScaleCenter(factor float64) Rectangle {
-	center := r.Center()
-
+// ScaleFrom scales the rectangle from a given point.
+func (r Rectangle) ScaleFrom(factor float64, origin Point) Rectangle {
 	return r.
-		Translate(center.Neg()).
+		Translate(origin.Neg()).
 		Scale(factor).
-		Translate(center)
+		Translate(origin)
+}
 
+// ScaleFromCenter scales the rectangle from the center.
+func (r Rectangle) ScaleFromCenter(factor float64) Rectangle {
+	return r.ScaleFrom(factor, r.Center())
 }
 
 // RotateAround returns the four vertices of the rectangle after a
@@ -158,7 +161,7 @@ func (r Rectangle) RotateAroundCenter(angle float64) Polygon {
 
 // InnerSquare returns a new square which fits inside of the rectangle.
 func (r Rectangle) InnerCenterSquare() Rectangle {
-	w, h := r.DX(), r.DY()
+	w, h := r.Width(), r.Height()
 	s := w
 	if w > h {
 		s = h

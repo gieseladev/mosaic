@@ -24,5 +24,5 @@ func TestPolygon_Translate(t *testing.T) {
 	), Poly(
 		Pt(1, 2), Pt(2, 2),
 		Pt(1, 1), Pt(2, 1),
-	).ScaleAroundCenter(2))
+	).ScaleFromCenter(2))
 }
