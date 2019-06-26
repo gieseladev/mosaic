@@ -9,7 +9,10 @@ A collage generator primarily designed to generate stunning playlist thumbnails
 
 ## Composers
 
-<img align="center" src="assets/composers-showcase.png" alt="Composer samples"/>
+<p align="center">
+    <img src="assets/composers-showcase.png" alt="Composer samples"/>
+</p>
+
 
 ## Command Line
 
