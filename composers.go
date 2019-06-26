@@ -60,7 +60,8 @@ func CirclesPie(dc *gg.Context, images ...image.Image) error {
 			}
 		}
 
-		img = imaging.Fill(img, int(rect.Width()), int(rect.Height()), imaging.Center, imaging.Lanczos)
+		img = imaging.Fill(img, int(math.Ceil(rect.Width())), int(math.Ceil(rect.Height())),
+			imaging.Center, imaging.Lanczos)
 		dc.DrawImage(img, int(rect.Min.X), int(rect.Min.Y))
 	}
 
