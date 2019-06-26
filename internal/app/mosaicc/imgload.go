@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/fogleman/gg"
 	"image"
+	"sort"
 	"strings"
-	"sync"
 )
 
 // LoadImage loads an image from the given location.
@@ -18,33 +18,53 @@ func LoadImage(location string) (image.Image, error) {
 
 // LoadImages loads the given images in parallel.
 func LoadImages(locations []string) ([]image.Image, error) {
-	var mut sync.Mutex
-	var wg sync.WaitGroup
-
-	// TODO preserve order
-
-	wg.Add(len(locations))
-
-	var images []image.Image
-	var errs []error
-	for _, location := range locations {
-		go func(location string) {
-			img, err := LoadImage(location)
-
-			mut.Lock()
-			defer mut.Unlock()
-
-			if err == nil {
-				images = append(images, img)
-			} else {
-				errs = append(errs, fmt.Errorf("couldn't load image %q: %v", location, err))
-			}
-
-			wg.Done()
-		}(location)
+	type LoadResult struct {
+		Index int
+		Image image.Image
+		Err   error
 	}
 
-	wg.Wait()
+	resultChan := make(chan LoadResult)
+
+	lastIndex := len(locations) - 1
+	for i, location := range locations {
+		go func(i int, location string) {
+			img, err := LoadImage(location)
+			if err != nil {
+				err = fmt.Errorf("couldn't load image %q: %v", location, err)
+			}
+
+			resultChan <- LoadResult{
+				Index: i,
+				Image: img,
+				Err:   err,
+			}
+
+			if i == lastIndex {
+				close(resultChan)
+			}
+		}(i, location)
+	}
+
+	errs := make([]error, 0)
+	results := make([]LoadResult, 0, len(locations))
+	for result := range resultChan {
+		if result.Err == nil {
+			results = append(results, result)
+		} else {
+			errs = append(errs, result.Err)
+		}
+	}
+
+	// preserve original order
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Index < results[j].Index
+	})
+
+	images := make([]image.Image, len(results))
+	for i, result := range results {
+		images[i] = result.Image
+	}
 
 	var combinedErr error
 	if len(errs) > 0 {
